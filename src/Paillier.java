@@ -6,12 +6,7 @@ import java.util.*;
  * @author Artur Hamernik
  */
 public class Paillier {
-
-    /**
-     * p, q - prime, large, randomly and independently chosen
-     * lambda = lcm(p-1, q-1) = (p-1)*(q-1)/gcd(p-1, q-1). - least common multiple of p-1 nad q-1
-     */
-    private BigInteger p, q, lambda;
+    private BigInteger lambda;
     /**
      * n = p * q
      */
@@ -21,11 +16,11 @@ public class Paillier {
      */
     public BigInteger nsquare;
     /**
-     * a random integer g in Z*(n^2) = {k<={0,1,...,n^2-1}: gcd(k, n^2) = 1}
+     * g - a random integer g in Z*(n^2) = {k<={0,1,...,n^2-1}: gcd(k, n^2) = 1}
      */
     private BigInteger g;
     /**
-     * a modular multiplicative inverse
+     * u - a modular multiplicative inverse
      */
     private BigInteger u;
     /**
@@ -34,39 +29,40 @@ public class Paillier {
     private int bitLength;
 
     /**
-     * Constructs an instance of the Paillier Cryptosystem with 512 bits of modulus and at least 1-2^(-64) certainty of primes generation.
+     * Constructs an instance of the Paillier Cryptosystem
      */
-    public Paillier() {
-        generateKeys(1024, 64);
+    public Paillier() {}
+    public Paillier(int bitLength, int certainty) {
+        generateKeys(bitLength, certainty);
     }
 
     /**
      * Sets up the public key and private key.
-     * @param bitLengthVal number of bits of modulus.
+     * @param bitLength number of bits of modulus.
      * @param certainty The probability that the new BigInteger represents a prime number will exceed (1 - 2^(-certainty)).
      *                  The execution time of this constructor is proportional to the value of this parameter.
      */
-    public void generateKeys(int bitLengthVal, int certainty) {
-        bitLength = bitLengthVal;
+    public void generateKeys(int bitLength, int certainty) {
+        this.bitLength = bitLength;
         /*
          * Calculate u until [u * L(g^lambda mod n^2)] mod n = 1
          */
         do {
-            System.out.println("Counting u");
             /*
              * Pick two random integers p and q. Pick again until gcd(p*q,(p-1)*(q-1)) = 1
+             *
+             * p, q - prime, large, randomly and independently chosen
+             * lambda = lcm(p-1, q-1) = (p-1)*(q-1)/gcd(p-1, q-1). - least common multiple of p-1 nad q-1
              */
+            BigInteger p, q;
             do {
-                System.out.println("Picking p and q");
-                p = new BigInteger(bitLength / 2, certainty, new Random());
-                q = new BigInteger(bitLength / 2, certainty, new Random());
+                p = new BigInteger(this.bitLength / 2, certainty, new Random());
+                q = new BigInteger(this.bitLength / 2, certainty, new Random());
             } while (!p.multiply(q).gcd(p.subtract(BigInteger.ONE).multiply(q.subtract(BigInteger.ONE))).equals(BigInteger.ONE));
-            System.out.println("Picked p and q");
 
             n = p.multiply(q);
             lambda = lcm(p.subtract(BigInteger.ONE), q.subtract(BigInteger.ONE));
             nsquare = n.multiply(n);
-
 
             /*
              * Pick random g from Z*(n^2) = {k<={0,1,...,n^2-1}: gcd(k, n^2) = 1}. Check if g belongs to our Z*
@@ -79,7 +75,6 @@ public class Paillier {
              */
             u = L(g.modPow(lambda, nsquare)).modInverse(n);
         } while (!u.multiply(L(g.modPow(lambda, nsquare))).mod(n).equals(BigInteger.ONE));
-        System.out.println("Calculated p, q, n, lambda and u");
     }
 
     /**
